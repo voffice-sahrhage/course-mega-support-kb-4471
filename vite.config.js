@@ -1,0 +1,22 @@
+// Build glue, not part of the kb export: renders every kb page to static HTML.
+import adapter from '@sveltejs/adapter-static';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { mdsvex } from 'mdsvex';
+import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
+
+const runbook = fileURLToPath(new URL('./src/lib/layouts/runbook.svelte', import.meta.url));
+
+export default defineConfig({
+  plugins: [
+    sveltekit({
+      extensions: ['.svelte', '.svx'],
+      preprocess: [mdsvex({ extensions: ['.svx'], layout: { runbook } })],
+      adapter: adapter({ pages: 'build', assets: 'build', strict: true }),
+      alias: { '#lib': 'src/lib' },
+      prerender: { entries: ['*'], handleHttpError: 'warn' },
+      // Inline the CSS so each rendered page is one file the desk can open as is.
+      inlineStyleThreshold: Infinity,
+    }),
+  ],
+});

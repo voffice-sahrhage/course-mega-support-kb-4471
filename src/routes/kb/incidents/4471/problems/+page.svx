@@ -1,0 +1,61 @@
+---
+layout: runbook
+title: '#4471 · one ticket per problem'
+owner: Jan Sahrhage
+status: open
+reviewed: 2026-10-28
+signature: Jan Sahrhage
+---
+
+<script>
+  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+</script>
+
+[#4471](/kb/incidents/4471) merged every report about wrong dates into one ticket and marked it
+known, with one fix queued. The merge went by subject line alone
+([decision 0001](/kb/decisions/0001-dedupe-by-subject)). Read by tenant and by what each report
+says, the ticket holds more than one problem. Each problem now has a ticket of its own.
+
+<ProblemTable ticket={4471} />
+
+<Callout kind="warn">
+The queued parser fix covers only the first problem. The other problems stay broken after it ships.
+</Callout>
+
+## The problems
+
+**The parser reads every date month first.** Our tenants write the day first, so their dates
+come out with day and month swapped: a booking for 7 April goes out as 4 July. This holds for
+every channel except the booking-v3 form. It is the problem #4471 was named after.
+
+**The booking-v3 form tells people to type the month first.** Its date field prints the hint
+`MM/DD/YYYY`. The tenants on booking-v3 write the day first, so their people follow the
+hint and type the month first, and the form reads it the tenant's way. The result looks like
+the parser problem, a swapped day and month, but the cause is the hint. The parser fix does not
+touch it. The #4471 page already shows this group as "no ticket of its own".
+
+**Some bookings move by exactly one day.** "Invite says Tuesday 12 May. Calendar says Monday
+11 May." "Client in Lisbon got Tuesday. Client in Toronto got Monday." No day and month swap
+in these: neither fix explains them. The desk had noted them as one-day moves and filed them
+under the parser. The Lisbon and Toronto report points at time zones; that is a lead, not a
+finding.
+
+## How they were counted
+
+- The ticket export pages overlap, so the same report can appear twice. Counted once per id.
+- The cause comes from the tenant: where they are and which booking form they run
+  (`src/lib/kb/causes.ts`). Not from the intake tag, which is a guess from the reporter's
+  browser, and not from the subject line.
+- The one-day moves come from the desk's own notes. Every report in #4471 was read to check
+  that no other report describes a one-day move.
+- The table above is computed from the export at render time (`src/lib/kb/problems.ts`).
+
+## What follows
+
+- Close #4471 as a merge of different problems; follow the tickets above instead.
+- Merging on subject alone put these problems in one ticket. Decision 0001 should be replaced
+  by a new record that merges reports by cause, not by subject.
+
+<RenderStamp {signature} />
