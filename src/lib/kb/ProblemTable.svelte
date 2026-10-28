@@ -4,19 +4,17 @@
   import tickets from '#lib/data/tickets-4471.json';
   import type { Report } from '#lib/kb/causes';
   import { tenantOf } from '#lib/kb/locales';
-  import { groupByProblem, PROBLEM_LABEL } from '#lib/kb/problems';
+  import { problemRows, PROBLEM_LABEL } from '#lib/kb/problems';
 
   let { ticket }: { ticket: number } = $props();
 
-  const split = $derived(groupByProblem(reports as Report[], ticket, tenantOf, notes.oneDayMove));
+  const split = $derived(problemRows(reports as Report[], ticket, tenantOf, notes.oneDayMove));
   const issueOf = (p: string) => (tickets.tickets as Record<string, number>)[p];
-  const covered = $derived(split.groups.filter((g) => issueOf(g.problem)).reduce((n, g) => n + g.reports.length, 0));
 </script>
 
 <p class="sum">
   <strong>{split.merged.length}</strong> reports merged into #{ticket} ·
-  <strong>{split.groups.length}</strong> {split.groups.length === 1 ? 'problem' : 'problems'} ·
-  <strong>{covered}</strong> covered by a ticket of their own
+  <strong>{split.rows.length}</strong> {split.rows.length === 1 ? 'problem' : 'problems'}
 </p>
 
 <table>
@@ -24,10 +22,10 @@
     <tr><th>problem</th><th>reports</th><th>tenants</th><th>seen</th><th>ticket</th></tr>
   </thead>
   <tbody>
-    {#each split.groups as g (g.problem)}
+    {#each split.rows as g (g.problem)}
       <tr class:open={!issueOf(g.problem)}>
         <td>{g.problem === 'unplaced' ? 'no tenant on file' : PROBLEM_LABEL[g.problem]} <code>{g.problem}</code></td>
-        <td>{g.reports.length}</td>
+        <td>{g.reports}</td>
         <td>{g.tenants}</td>
         <td>{g.firstSeen} → {g.lastSeen}</td>
         <td>
@@ -42,8 +40,15 @@
   </tbody>
 </table>
 
+{#each split.rows as g (g.problem)}
+  {#if g.filedUnder}
+    <p class="note">The {g.reports} <code>{g.problem}</code> reports are also counted under <code>{g.filedUnder.join(', ')}</code>, where the desk files them by tenant.</p>
+  {/if}
+{/each}
+
 <style>
   .sum { font-size: 1.1rem; }
+  .note { color: var(--muted); font-size: 0.85em; }
   .open td { background: var(--warn-bg); }
   .open td:last-child { color: var(--warn); font-weight: 600; }
 </style>

@@ -1,6 +1,7 @@
-// One problem per ticket. Builds on causes.ts and adds what the cause rule cannot see: reports the desk
-// read as a one-day move (desk-notes.json) describe no day/month swap, so neither parser nor hint explains them.
-import { causeOf, uniqueById, type Cause, type Report, type Tenant } from '#lib/kb/causes';
+// One problem per ticket, counted the way the desk counts (CauseTable, causes.ts): reports by cause, per
+// tenant. Reports the desk read as a one-day move (desk-notes.json) stay counted where they're filed and
+// are also a problem of their own: they describe no day/month swap, so neither parser nor hint explains them.
+import { groupByCause, readAs, uniqueById, type Cause, type Report, type Tenant } from '#lib/kb/causes';
 
 export type Problem = Cause | 'one-day';
 
@@ -10,36 +11,42 @@ export const PROBLEM_LABEL: Record<Problem, string> = {
   'one-day': 'booking moves by exactly one day',
 };
 
-export function problemOf(r: Report, t: Tenant | undefined, oneDayMove: readonly string[]): Problem | 'unplaced' {
-  if (oneDayMove.includes(r.id)) return 'one-day';
-  return causeOf(r, t) ?? 'unplaced';
-}
-
-export type ProblemGroup = {
+export type ProblemRow = {
   problem: Problem | 'unplaced';
-  reports: Report[];
+  reports: number;
   tenants: number;
   firstSeen: string;
   lastSeen: string;
+  // For one-day: the cause the desk files these reports under.
+  filedUnder?: string[];
 };
 
-export function groupByProblem(
+export function problemRows(
   reports: Report[],
   ticket: number,
   tenantOf: (r: Report) => Tenant | undefined,
   oneDayMove: readonly string[],
-): { merged: Report[]; groups: ProblemGroup[] } {
+): { merged: Report[]; rows: ProblemRow[] } {
   const merged = uniqueById(reports).filter((r) => r.mergedInto === ticket);
-  const byProblem = new Map<ProblemGroup['problem'], Report[]>();
-  for (const r of merged) {
-    const p = problemOf(r, tenantOf(r), oneDayMove);
-    byProblem.set(p, [...(byProblem.get(p) ?? []), r]);
+  const groups = groupByCause(merged, tenantOf);
+  const rows: ProblemRow[] = groups.map((g) => ({
+    problem: g.cause,
+    reports: g.reports.length,
+    tenants: g.tenants,
+    firstSeen: g.firstSeen,
+    lastSeen: g.lastSeen,
+  }));
+  const moved = merged.filter((r) => oneDayMove.includes(r.id));
+  if (moved.length) {
+    const days = moved.map((r) => r.receivedAt.slice(0, 10)).sort();
+    rows.push({
+      problem: 'one-day',
+      reports: moved.length,
+      tenants: new Set(moved.map((r) => r.tenant)).size,
+      firstSeen: days[0],
+      lastSeen: days[days.length - 1],
+      filedUnder: groups.filter((g) => readAs(g, oneDayMove)).map((g) => g.cause),
+    });
   }
-  const groups = [...byProblem.entries()]
-    .map(([problem, rs]) => {
-      const days = rs.map((r) => r.receivedAt.slice(0, 10)).sort();
-      return { problem, reports: rs, tenants: new Set(rs.map((r) => r.tenant)).size, firstSeen: days[0], lastSeen: days[days.length - 1] };
-    })
-    .sort((a, b) => b.reports.length - a.reports.length);
-  return { merged, groups };
+  return { merged, rows };
 }

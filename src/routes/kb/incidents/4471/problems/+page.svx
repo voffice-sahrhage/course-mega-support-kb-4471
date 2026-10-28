@@ -49,8 +49,10 @@ finding.
   (`src/lib/kb/causes.ts`). Not from the intake tag, which is a guess from the reporter's
   browser, and not from the subject line.
 - The one-day moves come from the desk's own notes. Every report in #4471 was read to check
-  that no other report describes a one-day move.
-- The table above is computed from the export at render time (`src/lib/kb/problems.ts`).
+  that no other report describes a one-day move. They are counted the desk's way: under the
+  parser, where the desk files them by tenant, and again as a problem of their own.
+- The table above is computed from the export at render time, with the desk's own cause rule
+  (`src/lib/kb/problems.ts` on top of `causes.ts`).
 
 ## What follows
 
