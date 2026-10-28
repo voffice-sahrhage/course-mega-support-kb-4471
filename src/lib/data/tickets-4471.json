@@ -1,4 +1,8 @@
 {
   "repo": "https://github.com/voffice-sahrhage/course-mega-support-kb-4471",
-  "tickets": { "parser": 1, "hint": 2, "one-day": 3 }
+  "tickets": [
+    { "issue": 1, "cause": "parser", "problem": "The parser reads every date month first" },
+    { "issue": 2, "cause": "hint", "problem": "The booking-v3 form hint says MM/DD/YYYY" },
+    { "issue": 3, "cause": "one-day", "problem": "Some bookings move by exactly one day" }
+  ]
 }

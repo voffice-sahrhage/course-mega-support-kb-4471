@@ -8,7 +8,8 @@ signature: Jan Sahrhage
 ---
 
 <script>
-  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import CauseTable from '#lib/kb/CauseTable.svelte';
+  import TicketList from '#lib/kb/TicketList.svelte';
   import Callout from '#lib/kb/Callout.svelte';
   import RenderStamp from '#lib/kb/RenderStamp.svelte';
 </script>
@@ -18,7 +19,15 @@ known, with one fix queued. The merge went by subject line alone
 ([decision 0001](/kb/decisions/0001-dedupe-by-subject)). Read by tenant and by what each report
 says, the ticket holds more than one problem. Each problem now has a ticket of its own.
 
-<ProblemTable ticket={4471} />
+<TicketList />
+
+## What the desk's view shows
+
+The desk's own table for #4471, unchanged. Its `parser` row also holds the reports the desk
+read as a one-day move (the footnote under the table); those are their own problem and have
+their own ticket. The parser ticket counts the rest of the row.
+
+<CauseTable ticket={4471} />
 
 <Callout kind="warn">
 The queued parser fix covers only the first problem. The other problems stay broken after it ships.
@@ -49,10 +58,10 @@ finding.
   (`src/lib/kb/causes.ts`). Not from the intake tag, which is a guess from the reporter's
   browser, and not from the subject line.
 - The one-day moves come from the desk's own notes. Every report in #4471 was read to check
-  that no other report describes a one-day move. They are counted the desk's way: under the
-  parser, where the desk files them by tenant, and again as a problem of their own.
-- The table above is computed from the export at render time, with the desk's own cause rule
-  (`src/lib/kb/problems.ts` on top of `causes.ts`).
+  that no other report describes a one-day move.
+- Each report is in exactly one ticket.
+- The table above is the desk's own view (`CauseTable`), computed from the export at render
+  time.
 
 ## What follows
 
